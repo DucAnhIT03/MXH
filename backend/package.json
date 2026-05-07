@@ -18,6 +18,7 @@
     "start:call": "ts-node services/call-service/src/main.ts",
     "start:message": "ts-node services/message-service/src/main.ts",
     "start:realtime": "ts-node services/realtime-service/src/main.ts",
+    "predev:all": "prisma generate && prisma db push",
     "dev:all": "concurrently -n AUTH,USER,CHAT,CALL,MESSAGE,RT,FE -c blue,green,cyan,magenta,yellow,red,white \"npm run start:auth\" \"npm run start:user\" \"npm run start:chat\" \"npm run start:call\" \"npm run start:message\" \"npm run start:realtime\" \"npm --prefix ..\\\\frontend\\\\socialweb run dev\"",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",

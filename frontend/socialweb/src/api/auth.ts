@@ -25,4 +25,9 @@ const verifyOTP = (email: string, otp: string) => {
   return api.post('/auth/verify-otp', { email, otp });
 };
 
-export { login, register, sendOTP, verifyOTP };
+// Đổi mật khẩu
+const changePassword = (data: { oldPassword: string; newPassword: string }) => {
+  return api.post('/auth/change-password', data);
+};
+
+export { login, register, sendOTP, verifyOTP, changePassword };

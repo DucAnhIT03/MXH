@@ -8,8 +8,9 @@ import {
   sendVideoIceCandidate,
   sendVideoOffer,
 } from '@/api/call';
-import { fetchUserProfile } from '@/api/chat';
+import { fetchUserProfile, sendMessage } from '@/api/chat';
 import { getRealtimeBaseUrl } from '@/utils/realtime';
+import { createCallLog } from '@/utils/callLog';
 
 const realtimeBaseUrl = getRealtimeBaseUrl();
 
@@ -146,6 +147,14 @@ export default function VideoCall() {
 
   const safeLeaveCall = useCallback(async () => {
     try {
+      if (conversationId) {
+        if (status === 'connected') {
+          await sendMessage(conversationId, createCallLog('video', 'ended', elapsedSeconds)).catch(() => null);
+        } else if (mode === 'caller' && status === 'ringing') {
+          await sendMessage(conversationId, createCallLog('video', 'missed')).catch(() => null);
+        }
+      }
+
       if (conversationId && userId) {
         await endVideoCall({
           conversationId,
@@ -158,7 +167,7 @@ export default function VideoCall() {
       cleanupMediaResources();
       navigate(backToMessagesUrl);
     }
-  }, [conversationId, userId, cleanupMediaResources, navigate, backToMessagesUrl]);
+  }, [conversationId, userId, status, elapsedSeconds, mode, cleanupMediaResources, navigate, backToMessagesUrl]);
 
   const createPeerConnection = useCallback(() => {
     if (peerConnectionRef.current) {
@@ -594,8 +603,11 @@ export default function VideoCall() {
             <img
               src={peerAvatar || `https://picsum.photos/seed/${userId || 'peer'}/40/40`}
               alt={peerName}
-              className="w-10 h-10 rounded-full object-cover"
+              className="w-10 h-10 rounded-full object-cover cursor-pointer"
               referrerPolicy="no-referrer"
+              onClick={() => {
+                if (userId) navigate(`/profile?userId=${userId}`);
+              }}
             />
             <div className="min-w-0">
               <p className="text-sm font-semibold text-white truncate">{peerName}</p>
@@ -621,8 +633,11 @@ export default function VideoCall() {
             <img
               src={peerAvatar || `https://picsum.photos/seed/${userId || 'peer'}-call/120/120`}
               alt={peerName}
-              className="h-24 w-24 rounded-full object-cover border border-white/20"
+              className="h-24 w-24 rounded-full object-cover border border-white/20 cursor-pointer"
               referrerPolicy="no-referrer"
+              onClick={() => {
+                if (userId) navigate(`/profile?userId=${userId}`);
+              }}
             />
             <p className="mt-4 text-xl font-semibold text-white">{peerName}</p>
             <p className="mt-1 text-sm text-gray-300">{statusLabel}</p>

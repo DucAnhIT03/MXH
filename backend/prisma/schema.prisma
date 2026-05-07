@@ -12,6 +12,7 @@ model User {
   email     String  @unique @db.VarChar(255)
   username  String  @unique @db.VarChar(20)
   avatar    String? @db.VarChar(2048)
+  cover     String? @db.VarChar(2048)
   bio       String? @db.Text
   isOnline  Boolean @default(false)
   isPrivate Boolean @default(false)
@@ -172,6 +173,50 @@ model Message {
   @@index([conversationId, createdAt])
   @@index([senderId])
   @@map("messages")
+}
+
+model Post {
+  id            String   @id @db.Char(36)
+  authorId      String   @db.Char(36)
+  content       String   @db.Text
+  imageUrl      String?  @db.VarChar(2048)
+  postType      String   @default("POST") @db.VarChar(32)
+  shortVideoUrl String?  @db.VarChar(2048)
+  hidden        Int      @default(0) @db.TinyInt
+  shareCount    Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([authorId], map: "idx_posts_authorId")
+  @@index([createdAt], map: "idx_posts_createdAt")
+  @@index([postType], map: "idx_posts_postType")
+  @@index([hidden], map: "idx_posts_hidden")
+  @@map("posts")
+}
+
+model PostReaction {
+  id        String   @id @db.Char(36)
+  postId    String   @db.Char(36)
+  userId    String   @db.Char(36)
+  reaction  String   @default("LIKE") @db.VarChar(16)
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId], map: "uniq_post_reactions_post_user")
+  @@index([postId], map: "idx_post_reactions_postId")
+  @@index([userId], map: "idx_post_reactions_userId")
+  @@map("post_reactions")
+}
+
+model PostComment {
+  id        String   @id @db.Char(36)
+  postId    String   @db.Char(36)
+  authorId  String   @db.Char(36)
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([postId, createdAt], map: "idx_post_comments_post_created")
+  @@index([authorId], map: "idx_post_comments_authorId")
+  @@map("post_comments")
 }
 
 model Notification {

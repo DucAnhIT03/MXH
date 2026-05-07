@@ -12,8 +12,8 @@ export class CreatePostDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['POST', 'SHORT_VIDEO'])
-  postType?: 'POST' | 'SHORT_VIDEO';
+  @IsIn(['POST', 'SHORT_VIDEO', 'STORY'])
+  postType?: 'POST' | 'SHORT_VIDEO' | 'STORY';
 
   @IsOptional()
   @IsString()

@@ -71,7 +71,12 @@ export default function Settings() {
         </div>
 
         {/* Đăng xuất */}
-        <div onClick={() => navigate('/login')} className="p-4 hover:bg-[#222222] cursor-pointer flex items-center justify-between transition-colors group">
+        <div onClick={() => {
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('token');
+          navigate('/login');
+        }} className="p-4 hover:bg-[#222222] cursor-pointer flex items-center justify-between transition-colors group">
           <div className="flex items-center space-x-4">
             <div className="w-10 h-10 bg-red-500/10 rounded-full flex items-center justify-center group-hover:bg-red-500/20 transition-colors">
               <LogOut className="w-5 h-5 text-red-500" />

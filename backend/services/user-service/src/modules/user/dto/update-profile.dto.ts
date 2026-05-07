@@ -12,8 +12,11 @@ export class UpdateProfileDto {
   avatar?: string;
 
   @IsOptional()
+  @IsUrl()
+  cover?: string;
+
+  @IsOptional()
   @IsString()
   @MaxLength(200)
   bio?: string;
 }
-

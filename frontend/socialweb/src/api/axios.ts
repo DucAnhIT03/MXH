@@ -30,6 +30,11 @@ api.interceptors.request.use((config) => {
     (config.headers as any).Authorization = `Bearer ${token}`;
   }
 
+  // Let the runtime set multipart boundary; default JSON Content-Type breaks uploads.
+  if (config.data instanceof FormData) {
+    delete (config.headers as any)['Content-Type'];
+  }
+
   return config;
 });
 

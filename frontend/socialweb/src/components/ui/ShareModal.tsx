@@ -1,13 +1,18 @@
-import React, { useEffect, useRef } from 'react';
-import { X, Share, MessageCircle, Link as LinkIcon, Users, Edit3, Send } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { X, Share, MessageCircle, Link as LinkIcon, Users, Edit3 } from 'lucide-react';
+import { recordPostShare } from '@/api/posts';
 
 interface ShareModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /** Khi có giá trị, tùy chọn “Chia sẻ ngay” sẽ gọi API và tăng shareCount. */
+  postId?: string | null;
+  onShareRecorded?: () => void;
 }
 
-export default function ShareModal({ isOpen, onClose }: ShareModalProps) {
+export default function ShareModal({ isOpen, onClose, postId, onShareRecorded }: ShareModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
+  const [shareBusy, setShareBusy] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -27,14 +32,50 @@ export default function ShareModal({ isOpen, onClose }: ShareModalProps) {
     };
   }, [isOpen, onClose]);
 
+  useEffect(() => {
+    if (!isOpen) {
+      setShareBusy(false);
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
+  const handlePrimaryShare = async () => {
+    if (!postId?.trim()) {
+      onClose();
+      return;
+    }
+    setShareBusy(true);
+    try {
+      await recordPostShare(postId.trim());
+      onShareRecorded?.();
+      onClose();
+    } catch {
+      setShareBusy(false);
+    }
+  };
+
   const shareOptions = [
-    { icon: Share, label: 'Chia sẻ ngay (Công khai)', color: 'text-blue-500', bg: 'bg-blue-500/10' },
-    { icon: Edit3, label: 'Chia sẻ lên Bảng tin', color: 'text-gray-300', bg: 'bg-[#3A3B3C]' },
-    { icon: MessageCircle, label: 'Gửi trong Messenger', color: 'text-blue-400', bg: 'bg-blue-400/10' },
-    { icon: Users, label: 'Chia sẻ lên nhóm', color: 'text-green-500', bg: 'bg-green-500/10' },
-    { icon: LinkIcon, label: 'Sao chép liên kết', color: 'text-gray-300', bg: 'bg-[#3A3B3C]' },
+    {
+      icon: Share,
+      label: shareBusy ? 'Đang xử lý...' : 'Chia sẻ ngay (Công khai)',
+      color: 'text-blue-500',
+      bg: 'bg-blue-500/10',
+      onClick: () => void handlePrimaryShare(),
+    },
+    { icon: Edit3, label: 'Chia sẻ lên Bảng tin', color: 'text-gray-300', bg: 'bg-[#3A3B3C]', onClick: onClose },
+    { icon: MessageCircle, label: 'Gửi trong Messenger', color: 'text-blue-400', bg: 'bg-blue-400/10', onClick: onClose },
+    { icon: Users, label: 'Chia sẻ lên nhóm', color: 'text-green-500', bg: 'bg-green-500/10', onClick: onClose },
+    {
+      icon: LinkIcon,
+      label: 'Sao chép liên kết',
+      color: 'text-gray-300',
+      bg: 'bg-[#3A3B3C]',
+      onClick: () => {
+        const url = `${window.location.origin}/?post=${encodeURIComponent(postId ?? '')}`;
+        void navigator.clipboard.writeText(url).finally(() => onClose());
+      },
+    },
   ];
 
   return (
@@ -61,8 +102,10 @@ export default function ShareModal({ isOpen, onClose }: ShareModalProps) {
             return (
               <button 
                 key={index}
-                onClick={onClose}
-                className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-[#3A3B3C] transition-colors group"
+                type="button"
+                disabled={shareBusy && index === 0}
+                onClick={option.onClick}
+                className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-[#3A3B3C] transition-colors group disabled:opacity-50"
               >
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${option.bg}`}>
                   <Icon className={`w-5 h-5 ${option.color}`} />

@@ -1,7 +1,4 @@
-import api from '@/api/axios';
-
-const userApiBaseUrl =
-  import.meta.env.VITE_USER_API_BASE_URL?.trim() || 'http://localhost:3002/api';
+import { userApiClient } from '@/api/userApiClient';
 
 type Pagination = {
   page?: number;
@@ -38,7 +35,7 @@ export type PaginatedResponse<T> = {
 export const fetchFriends = async (
   pagination: Pagination = {},
 ): Promise<PaginatedResponse<FriendItem>> => {
-  const response = await api.get(`${userApiBaseUrl}/users/me/friends`, {
+  const response = await userApiClient.get('/users/me/friends', {
     params: { page: pagination.page ?? 1, limit: pagination.limit ?? 20 },
   });
 
@@ -48,7 +45,7 @@ export const fetchFriends = async (
 export const fetchFriendRequests = async (
   pagination: Pagination = {},
 ): Promise<PaginatedResponse<FriendRequestItem>> => {
-  const response = await api.get(`${userApiBaseUrl}/users/me/friend-requests`, {
+  const response = await userApiClient.get('/users/me/friend-requests', {
     params: { page: pagination.page ?? 1, limit: pagination.limit ?? 20 },
   });
 
@@ -58,8 +55,8 @@ export const fetchFriendRequests = async (
 export const acceptFriendRequest = async (
   requestId: string,
 ): Promise<{ success: boolean }> => {
-  const response = await api.post(
-    `${userApiBaseUrl}/users/me/friend-requests/${requestId}/accept`,
+  const response = await userApiClient.post(
+    `/users/me/friend-requests/${encodeURIComponent(requestId)}/accept`,
     {},
   );
 
@@ -69,8 +66,8 @@ export const acceptFriendRequest = async (
 export const rejectFriendRequest = async (
   requestId: string,
 ): Promise<{ success: boolean }> => {
-  const response = await api.post(
-    `${userApiBaseUrl}/users/me/friend-requests/${requestId}/reject`,
+  const response = await userApiClient.post(
+    `/users/me/friend-requests/${encodeURIComponent(requestId)}/reject`,
     {},
   );
 
@@ -80,10 +77,7 @@ export const rejectFriendRequest = async (
 export const sendFriendRequest = async (
   userId: string,
 ): Promise<{ success: boolean }> => {
-  const response = await api.post(
-    `${userApiBaseUrl}/users/${userId}/follow`,
-    {},
-  );
+  const response = await userApiClient.post(`/users/${encodeURIComponent(userId)}/follow`, {});
 
   return response.data;
 };
@@ -91,13 +85,13 @@ export const sendFriendRequest = async (
 export const cancelFriendRequest = async (
   userId: string,
 ): Promise<{ success: boolean }> => {
-  const response = await api.delete(`${userApiBaseUrl}/users/${userId}/follow`);
+  const response = await userApiClient.delete(`/users/${encodeURIComponent(userId)}/follow`);
 
   return response.data;
 };
 
 export const fetchFollowingIds = async (): Promise<string[]> => {
-  const response = await api.get(`${userApiBaseUrl}/users/me/following-ids`);
+  const response = await userApiClient.get('/users/me/following-ids');
 
   return response.data;
 };
@@ -105,7 +99,7 @@ export const fetchFollowingIds = async (): Promise<string[]> => {
 export const fetchRecommendations = async (
   pagination: Pagination = {},
 ): Promise<PaginatedResponse<UserSummary>> => {
-  const response = await api.get(`${userApiBaseUrl}/users/recommendations`, {
+  const response = await userApiClient.get('/users/recommendations', {
     params: { page: pagination.page ?? 1, limit: pagination.limit ?? 20 },
   });
 
@@ -116,7 +110,7 @@ export const searchUsers = async (
   keyword: string,
   pagination: Pagination = {},
 ): Promise<PaginatedResponse<UserSummary>> => {
-  const response = await api.get(`${userApiBaseUrl}/users/search`, {
+  const response = await userApiClient.get('/users/search', {
     params: {
       username: keyword,
       page: pagination.page ?? 1,

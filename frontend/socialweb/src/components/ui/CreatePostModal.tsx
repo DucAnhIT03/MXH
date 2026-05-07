@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   X,
   Image,
@@ -54,14 +54,14 @@ export default function CreatePostModal({
     setSubmitError('');
   };
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (isSubmitting) {
       return;
     }
 
     resetForm();
     onClose();
-  };
+  }, [isSubmitting, onClose]);
 
   const handleImagePick = (event: React.ChangeEvent<HTMLInputElement>) => {
     const pickedFile = event.target.files?.[0];
@@ -132,23 +132,25 @@ export default function CreatePostModal({
     }
   };
 
-  // Close modal when clicking outside
+  // Close modal when clicking outside; lock document scroll while open
   useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
     const handleClickOutside = (event: MouseEvent) => {
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
         handleClose();
       }
     };
 
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      // Prevent scrolling on body when modal is open
-      document.body.style.overflow = 'hidden';
-    }
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('mousedown', handleClickOutside);
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = previousOverflow;
     };
   }, [isOpen, handleClose]);
 
@@ -166,11 +168,12 @@ export default function CreatePostModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div 
-        ref={modalRef}
-        className="bg-[#242526] w-full max-w-[600px] rounded-xl shadow-2xl flex flex-col animate-in fade-in zoom-in-95 duration-200"
-      >
+    <div className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-black/70 p-4">
+      <div className="flex min-h-[100dvh] items-center justify-center py-4">
+        <div 
+          ref={modalRef}
+          className="bg-[#242526] w-full max-w-[600px] max-h-[min(90dvh,calc(100dvh-2rem))] overflow-y-auto overscroll-contain rounded-xl shadow-2xl flex flex-col animate-in fade-in zoom-in-95 duration-200"
+        >
         {/* Header */}
         <div className="relative flex items-center justify-center p-4 border-b border-[#3E4042]">
           <h2 className="text-xl font-bold text-[#E4E6EB]">Tạo bài viết</h2>
@@ -260,7 +263,9 @@ export default function CreatePostModal({
                   onClick={() => videoInputRef.current?.click()}
                   className="w-full rounded-lg border border-[#3E4042] bg-[#242526] px-3 py-2 text-left text-sm text-[#E4E6EB] hover:bg-[#2F3031]"
                 >
-                  {videoFile ? `Da chon video: ${videoFile.name}` : 'Chon video short de upload len Cloudinary'}
+                  {videoFile
+                    ? `Đã chọn video: ${videoFile.name}`
+                    : 'Chọn video short để tải lên Cloudinary'}
                 </button>
                 <input
                   type="file"
@@ -274,7 +279,7 @@ export default function CreatePostModal({
                   type="url"
                   value={shortVideoUrl}
                   onChange={(event) => setShortVideoUrl(event.target.value)}
-                  placeholder="Hoac dan URL video co san (https://...mp4)"
+                  placeholder="Hoặc dán URL video có sẵn (https://...mp4)"
                   className="w-full rounded-lg border border-[#3E4042] bg-[#242526] px-3 py-2 text-sm text-[#E4E6EB] placeholder-[#B0B3B8] focus:border-blue-500 focus:outline-none"
                 />
               </div>
@@ -341,9 +346,10 @@ export default function CreatePostModal({
                 : 'bg-[#3A3B3C] text-[#B0B3B8] cursor-not-allowed'
             }`}
           >
-            {isSubmitting ? 'Dang upload va dang bai...' : 'Dang'}
+            {isSubmitting ? 'Đang tải lên và đăng bài...' : 'Đăng'}
           </button>
         </div>
+      </div>
       </div>
     </div>
   );

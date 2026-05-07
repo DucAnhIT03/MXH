@@ -1,10 +1,8 @@
 import api from '@/api/axios';
+import { userApiClient } from '@/api/userApiClient';
 
 const chatApiBaseUrl =
   import.meta.env.VITE_CHAT_API_BASE_URL?.trim() || 'http://localhost:3003';
-
-const userApiBaseUrl =
-  import.meta.env.VITE_USER_API_BASE_URL?.trim() || 'http://localhost:3002/api';
 
 export type ChatConversation = {
   id: string;
@@ -40,6 +38,7 @@ export type UserProfile = {
   avatar?: string | null;
   bio?: string | null;
   isOnline?: boolean;
+  updatedAt?: string;
 };
 
 export const createPrivateConversation = async (participantId: string): Promise<ChatConversation> => {
@@ -87,7 +86,7 @@ export const sendMessage = async (
 };
 
 export const fetchUserProfile = async (userId: string): Promise<UserProfile> => {
-  const response = await api.get(`${userApiBaseUrl}/users/${userId}`);
+  const response = await userApiClient.get(`/users/${encodeURIComponent(userId)}`);
 
   return response.data;
 };

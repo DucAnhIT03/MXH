@@ -8,8 +8,9 @@ import {
   sendAudioIceCandidate,
   sendAudioOffer,
 } from '@/api/call';
-import { fetchUserProfile } from '@/api/chat';
+import { fetchUserProfile, sendMessage } from '@/api/chat';
 import { getRealtimeBaseUrl } from '@/utils/realtime';
+import { createCallLog } from '@/utils/callLog';
 
 const realtimeBaseUrl = getRealtimeBaseUrl();
 
@@ -82,6 +83,14 @@ export default function AudioCall() {
 
   const safeLeaveCall = useCallback(async () => {
     try {
+      if (conversationId) {
+        if (status === 'connected') {
+          await sendMessage(conversationId, createCallLog('audio', 'ended', elapsedSeconds)).catch(() => null);
+        } else if (mode === 'caller' && status === 'ringing') {
+          await sendMessage(conversationId, createCallLog('audio', 'missed')).catch(() => null);
+        }
+      }
+
       if (conversationId && userId) {
         await endAudioCall({
           conversationId,
@@ -94,7 +103,7 @@ export default function AudioCall() {
       cleanupMediaResources();
       navigate(backToMessagesUrl);
     }
-  }, [conversationId, userId, cleanupMediaResources, navigate, backToMessagesUrl]);
+  }, [conversationId, userId, status, elapsedSeconds, mode, cleanupMediaResources, navigate, backToMessagesUrl]);
 
   const createPeerConnection = useCallback(() => {
     if (peerConnectionRef.current) {
@@ -147,7 +156,7 @@ export default function AudioCall() {
       if (state === 'failed' || state === 'disconnected' || state === 'closed') {
         if (status !== 'ended') {
           setStatus('failed');
-          setError('Cuoc goi bi ngat ket noi.');
+          setError('Cuộc gọi bị ngắt kết nối.');
         }
       }
     };
@@ -157,7 +166,7 @@ export default function AudioCall() {
 
   useEffect(() => {
     if (!conversationId || !userId) {
-      setError('Thieu thong tin cuoc goi.');
+      setError('Thiếu thông tin cuộc gọi.');
       setStatus('failed');
       return;
     }
@@ -182,7 +191,7 @@ export default function AudioCall() {
         setIsMicReady(true);
       } catch {
         if (!isCancelled) {
-          setError('Khong the truy cap micro. Vui long cap quyen microphone.');
+          setError('Không thể truy cập micro. Vui lòng cấp quyền microphone.');
           setStatus('failed');
         }
       }
@@ -199,7 +208,7 @@ export default function AudioCall() {
     const token = localStorage.getItem('accessToken') ?? localStorage.getItem('token');
     if (!token) {
       setStatus('failed');
-      setError('Phien dang nhap da het han.');
+      setError('Phiên đăng nhập đã hết hạn.');
       return;
     }
 
@@ -220,7 +229,7 @@ export default function AudioCall() {
 
       if (!payload.accepted) {
         setStatus('ended');
-        setError('Nguoi nhan da tu choi cuoc goi.');
+        setError('Người nhận đã từ chối cuộc gọi.');
         window.setTimeout(() => navigate(backToMessagesUrl), 1200);
         return;
       }
@@ -294,7 +303,7 @@ export default function AudioCall() {
       }
 
       setStatus('ended');
-      setError('Cuoc goi da ket thuc.');
+      setError('Cuộc gọi đã kết thúc.');
       cleanupMediaResources();
       window.setTimeout(() => navigate(backToMessagesUrl), 600);
     };
@@ -348,7 +357,7 @@ export default function AudioCall() {
           })();
         }
       } catch {
-        setError('Khong xu ly duoc yeu cau cuoc goi den.');
+        setError('Không xử lý được yêu cầu cuộc gọi đến.');
         setStatus('failed');
       } finally {
         sessionStorage.removeItem('incomingAudioCall');
@@ -377,7 +386,7 @@ export default function AudioCall() {
 
         setStatus('ringing');
       } catch {
-        setError('Khong the bat dau cuoc goi thoai.');
+        setError('Không thể bắt đầu cuộc gọi thoại.');
         setStatus('failed');
       }
     })();
@@ -414,18 +423,18 @@ export default function AudioCall() {
 
   const statusLabel = useMemo(() => {
     if (status === 'ringing') {
-      return 'Dang do chuong...';
+      return 'Đang đổ chuông...';
     }
     if (status === 'connected') {
-      return 'Dang ket noi am thanh';
+      return 'Đang kết nối âm thanh';
     }
     if (status === 'failed') {
-      return 'Khong the ket noi';
+      return 'Không thể kết nối';
     }
     if (status === 'ended') {
-      return 'Da ket thuc cuoc goi';
+      return 'Đã kết thúc cuộc gọi';
     }
-    return 'Dang ket noi...';
+    return 'Đang kết nối...';
   }, [status]);
 
   return (
@@ -459,7 +468,15 @@ export default function AudioCall() {
           <div className="relative mb-6 md:mb-8">
             <div className="absolute inset-0 bg-cyan-400/20 rounded-full blur-2xl animate-pulse"></div>
             <div className="absolute inset-0 bg-cyan-400/40 rounded-full blur-xl animate-ping" style={{ animationDuration: '3s' }}></div>
-            <img src={peerAvatar || `https://picsum.photos/seed/${userId || 'caller'}/160/160`} alt={peerName} className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-cyan-500/50 shadow-[0_0_30px_rgba(6,182,212,0.3)] relative z-10" referrerPolicy="no-referrer" />
+            <img
+              src={peerAvatar || `https://picsum.photos/seed/${userId || 'caller'}/160/160`}
+              alt={peerName}
+              className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-cyan-500/50 shadow-[0_0_30px_rgba(6,182,212,0.3)] relative z-10 cursor-pointer"
+              referrerPolicy="no-referrer"
+              onClick={() => {
+                if (userId) navigate(`/profile?userId=${userId}`);
+              }}
+            />
           </div>
 
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 truncate max-w-full">{peerName}</h1>

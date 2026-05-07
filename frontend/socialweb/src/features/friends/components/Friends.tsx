@@ -395,6 +395,10 @@ export default function Friends() {
     }
   };
 
+  const goToProfile = (userId: string) => {
+    navigate(`/profile?userId=${userId}`);
+  };
+
   const handleOpenAudioCall = async (userId: string) => {
     setError('');
     setOpeningAudioCallUserIds((prev) => (prev.includes(userId) ? prev : [...prev, userId]));
@@ -517,11 +521,17 @@ export default function Friends() {
                       <img
                         src={item.user.avatar || `https://picsum.photos/seed/${item.user.id}/48/48`}
                         alt={item.user.username}
-                        className="h-12 w-12 rounded-full object-cover"
+                        className="h-12 w-12 rounded-full object-cover cursor-pointer"
                         referrerPolicy="no-referrer"
+                        onClick={() => goToProfile(item.user.id)}
                       />
                       <div>
-                        <p className="font-medium text-white">{item.user.username}</p>
+                        <p
+                          className="font-medium text-white cursor-pointer hover:underline"
+                          onClick={() => goToProfile(item.user.id)}
+                        >
+                          {item.user.username}
+                        </p>
                         <p className="text-xs text-gray-400">{item.user.bio || 'Chưa cập nhật bio'}</p>
                       </div>
                     </div>
@@ -572,6 +582,64 @@ export default function Friends() {
           </div>
         )}
 
+        {!showSearchResults && recommendations.length > 0 && (
+          <div className="mb-8">
+            <h2 className="mb-4 text-xl font-bold text-white">Gợi ý kết bạn</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {recommendations
+                .filter(recUser => 
+                  !friendIds.has(recUser.id) && 
+                  !sentRequestUserIds.has(recUser.id) && 
+                  !incomingRequestFromUserIds.has(recUser.id)
+                )
+                .slice(0, 6)
+                .map((recUser) => (
+                <div key={recUser.id} className="bg-[#1A1A1A] rounded-2xl border border-[#2A2A2A] p-4 flex flex-col items-center text-center hover:border-[#333] transition-colors shadow-sm">
+                  <div className="relative mb-3">
+                    <img
+                      src={recUser.avatar || `https://ui-avatars.com/api/?background=10B981&color=fff&size=80&name=${encodeURIComponent(recUser.username)}`}
+                      alt={recUser.username}
+                      className="w-20 h-20 rounded-full object-cover cursor-pointer"
+                      referrerPolicy="no-referrer"
+                      onClick={() => goToProfile(recUser.id)}
+                    />
+                  </div>
+                  <h3
+                    className="text-white font-semibold text-base mb-1 truncate w-full px-2 cursor-pointer hover:underline"
+                    onClick={() => goToProfile(recUser.id)}
+                  >
+                    {recUser.username}
+                  </h3>
+                  <p className="text-xs text-gray-400 mb-4 line-clamp-1 px-2">{recUser.bio || 'Có thể bạn biết'}</p>
+                  
+                  <button
+                    onClick={() => void handleSendFriendRequest(recUser.id)}
+                    disabled={
+                      friendIds.has(recUser.id) ||
+                      incomingRequestFromUserIds.has(recUser.id) ||
+                      sendingRequestUserIds.includes(recUser.id)
+                    }
+                    className="w-full mt-auto bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 font-semibold py-2 px-4 rounded-xl transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed border border-emerald-500/20"
+                  >
+                    {sendingRequestUserIds.includes(recUser.id)
+                      ? 'Đang gửi...'
+                      : sentRequestUserIds.has(recUser.id)
+                        ? 'Đã gửi lời mời'
+                        : incomingRequestFromUserIds.has(recUser.id)
+                          ? 'Đã có lời mời'
+                          : friendIds.has(recUser.id)
+                            ? 'Đã là bạn bè'
+                            : 'Thêm bạn bè'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="mb-4 mt-2">
+          <h2 className="text-xl font-bold text-white">Tất cả bạn bè ({friends.length})</h2>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           {!isLoading && friends.length === 0 && (
             <p className="col-span-full text-sm text-gray-400">Bạn chưa có bạn bè nào.</p>
@@ -580,12 +648,23 @@ export default function Friends() {
           {friends.map((friend) => (
             <div key={friend.user.id} className="bg-[#1A1A1A] rounded-2xl border border-[#2A2A2A] p-5 flex flex-col items-center text-center">
               <div className="relative mb-3">
-                <img src={friend.user.avatar || `https://picsum.photos/seed/${friend.user.id}/80/80`} alt={friend.user.username} className="w-20 h-20 rounded-full object-cover" referrerPolicy="no-referrer" />
+                <img
+                  src={friend.user.avatar || `https://picsum.photos/seed/${friend.user.id}/80/80`}
+                  alt={friend.user.username}
+                  className="w-20 h-20 rounded-full object-cover cursor-pointer"
+                  referrerPolicy="no-referrer"
+                  onClick={() => goToProfile(friend.user.id)}
+                />
                 {friend.user.isOnline && (
                   <span className="absolute bottom-1 right-1 block h-4 w-4 rounded-full bg-green-500 ring-4 ring-[#1A1A1A]" />
                 )}
               </div>
-              <h3 className="text-white font-semibold mb-1">{friend.user.username}</h3>
+              <h3
+                className="text-white font-semibold mb-1 cursor-pointer hover:underline"
+                onClick={() => goToProfile(friend.user.id)}
+              >
+                {friend.user.username}
+              </h3>
               
               {friend.user.bio && <p className="mb-3 text-xs text-gray-400">{friend.user.bio}</p>}
               
@@ -639,9 +718,20 @@ export default function Friends() {
             {requests.map((req) => (
               <div key={req.id} className="bg-[#1A1A1A] rounded-2xl border border-[#2A2A2A] p-4 flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <img src={req.fromUser.avatar || `https://picsum.photos/seed/${req.fromUser.id}/48/48`} alt={req.fromUser.username} className="w-12 h-12 rounded-full object-cover" referrerPolicy="no-referrer" />
+                  <img
+                    src={req.fromUser.avatar || `https://picsum.photos/seed/${req.fromUser.id}/48/48`}
+                    alt={req.fromUser.username}
+                    className="w-12 h-12 rounded-full object-cover cursor-pointer"
+                    referrerPolicy="no-referrer"
+                    onClick={() => goToProfile(req.fromUser.id)}
+                  />
                   <div>
-                    <h3 className="text-white font-medium text-sm">{req.fromUser.username}</h3>
+                    <h3
+                      className="text-white font-medium text-sm cursor-pointer hover:underline"
+                      onClick={() => goToProfile(req.fromUser.id)}
+                    >
+                      {req.fromUser.username}
+                    </h3>
                     <p className="text-xs text-gray-400">{req.fromUser.isOnline ? 'Đang online' : 'Đang offline'}</p>
                   </div>
                 </div>
@@ -659,7 +749,11 @@ export default function Friends() {
           <h2 className="text-lg font-semibold text-white mb-4">Bạn bè đang online</h2>
           <div className="space-y-4">
             {onlineContacts.map((contact) => (
-              <div key={contact.id} className="flex items-center justify-between cursor-pointer hover:bg-[#2A2A2A] p-2 rounded-xl transition-colors -mx-2">
+              <div
+                key={contact.id}
+                className="flex items-center justify-between cursor-pointer hover:bg-[#2A2A2A] p-2 rounded-xl transition-colors -mx-2"
+                onClick={() => goToProfile(contact.id)}
+              >
                 <div className="flex items-center space-x-3">
                   <div className="relative">
                     <img src={contact.avatar || `https://picsum.photos/seed/${contact.id}/32/32`} alt={contact.username} className="w-8 h-8 rounded-full object-cover" referrerPolicy="no-referrer" />

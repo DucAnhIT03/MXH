@@ -59,7 +59,7 @@ export class OtpService {
 
     if (!host || !user || !pass) {
       throw new InternalServerErrorException(
-        'Mail service chua duoc cau hinh. Thieu SMTP_* hoac MAIL_*',
+        'Mail service chưa được cấu hình. Thiếu SMTP_* hoặc MAIL_*',
       );
     }
 
@@ -87,16 +87,16 @@ export class OtpService {
       await transporter.sendMail({
         from,
         to: email,
-        subject: 'Ma xac thuc OTP',
-        text: `Ma OTP cua ban la ${otp}. Ma co hieu luc trong ${otpTtlSeconds} giay.`,
+        subject: 'Mã xác thực OTP',
+        text: `Mã OTP của bạn là ${otp}. Mã có hiệu lực trong ${otpTtlSeconds} giây.`,
         html: `<div style="font-family:Arial,sans-serif;line-height:1.6">
-                 <h2>Ma xac thuc OTP</h2>
-                 <p>Ma OTP cua ban la: <strong style="font-size:24px;letter-spacing:4px">${otp}</strong></p>
-                 <p>Ma co hieu luc trong <strong>${otpTtlSeconds} giay</strong>.</p>
+                 <h2>Mã xác thực OTP</h2>
+                 <p>Mã OTP của bạn là: <strong style="font-size:24px;letter-spacing:4px">${otp}</strong></p>
+                 <p>Mã có hiệu lực trong <strong>${otpTtlSeconds} giây</strong>.</p>
                </div>`,
       });
     } catch {
-      throw new InternalServerErrorException('Gui email OTP that bai');
+      throw new InternalServerErrorException('Gửi email OTP thất bại');
     }
   }
 
